@@ -1,6 +1,11 @@
-from PySide6.QtWidgets import QApplication, QLabel
+import csv
 
-app = QApplication([])
-label = QLabel("PySide6 works")
-label.show()
-app.exec()
+#annotation system
+from core.dataset import scan_folder
+
+def main():
+    scan_folder()
+
+
+if __name__ == "__main__":
+    main()
