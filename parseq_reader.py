@@ -1,6 +1,8 @@
+from unittest import result
+
 import torch
 from strhub.models.utils import create_model
-from PIL import Image
+from PIL import Image 
 from strhub.data.module import SceneTextDataModule
 
 
@@ -15,6 +17,7 @@ img_transform = SceneTextDataModule.get_transform(model.hparams.img_size)
 def read_plate(image_path):
     image = Image.open(image_path).convert("RGB")
 
+    
     image_tensor = img_transform(image).unsqueeze(0).to(device)
 
     logits = model(image_tensor)
@@ -23,3 +26,4 @@ def read_plate(image_path):
     pred, confidence = model.tokenizer.decode(prob)
 
     return pred[0]
+
