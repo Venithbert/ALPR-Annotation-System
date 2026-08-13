@@ -25,7 +25,7 @@ review by 60 to 80 percent. Create ground truth faster without losing quality.
 ## Pipeline
 
 1. **Scan** — list `data/`, sort, parse each filename → one row per image in `results.csv`
-2. **Detect** — YOLO per image → padded crop in `crops/`, same filename
+2. **Detect** — YOLO per image →  crops goes in `crops/`, same filename, update `results.csv` with confidence score of yolo
 3. **Read ×3** — Paddle, then ParSeq, then VLM. Each is a separate subprocess run over
    the whole `crops/` folder, writing its own CSV
 4. **Join** — merge the three reader CSVs into `results.csv`, keyed on filename
