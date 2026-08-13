@@ -25,5 +25,8 @@ def read_plate(image_path):
     prob = logits.softmax(-1)
     pred, confidence = model.tokenizer.decode(prob)
 
+    print("PARSeq sonucu:", pred[0])
+    print("PARSeq confidence:", confidence)
+
     return pred[0]
 
