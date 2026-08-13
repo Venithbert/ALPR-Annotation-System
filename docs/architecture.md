@@ -68,7 +68,7 @@ alpr/
     readers.py     launches reader subprocesses
     vote.py        normalisation + bucket assignment
     store.py       results.csv read/write
-  ui/              Qt widgets only
+  ui/              Qt widgets only PySide6
     main_window.py
   config.py
   app.py           entry point
@@ -80,7 +80,6 @@ alpr/
 
 **`core/` never imports PySide6. `ui/` never contains logic.**
  
-
 ---
 
 ## Confidence scores
