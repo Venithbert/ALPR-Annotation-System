@@ -11,7 +11,6 @@ def scan_folder(folder_path):
     """
 
     registeryArray = []
-
     for image in folder_path.iterdir():
 
         #check if it's supported format
@@ -33,7 +32,7 @@ def parse_filename(name):
     """Extract the ALPR reading from a filename.
     "T7_063400_11-1111____Unknown.jpg" -> "11-1111"
      """
-    
+
     regex_pattern = r"_([^_]+)_{4}(?!_)"
     match = re.search(regex_pattern, name)
 
@@ -41,5 +40,3 @@ def parse_filename(name):
         return match.group(1)
     else:
         return ""               
-
-

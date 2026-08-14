@@ -13,7 +13,6 @@ def load_model(model_path):
     finally:
         pathlib.PosixPath = original
 
-
 def detect_plate(model, folder, crops_folder):
     """Run YOLO on every image, save the best crop in crops folder, record confidence on record dict and return it. """
 

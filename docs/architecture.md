@@ -27,7 +27,7 @@ review by 60 to 80 percent. Create ground truth faster without losing quality.
 1. **Scan** — list `data/`, sort, parse each filename → one row per image in `results.csv`
 2. **Detect** — YOLO per image →  crops goes in `crops/`, same filename, update `results.csv` with confidence score of yolo
 3. **Read ×3** — Paddle, then ParSeq, then VLM. Each is a separate subprocess run over
-   the whole `crops/` folder, writing its own CSV
+   the whole `crops/` folder, writing its own CSV. App will just call ai`s python scripts.
 4. **Join** — merge the three reader CSVs into `results.csv`, keyed on filename
 5. **Normalise** — one shared function applied to all four readings (ALPR + 3 readers)
 6. **Vote** — assign a bucket

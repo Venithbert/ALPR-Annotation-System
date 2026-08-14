@@ -1,7 +1,6 @@
 import csv
 import random
 
-
 def fake_reader(records, name, out_path):
     """Write a fake reader CSV: mostly correct plates, some deliberate errors.
 
