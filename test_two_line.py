@@ -183,8 +183,8 @@ for image_path in test_images:
     # 8. PARSeq ile oku
     # --------------------------------------------------------
 
-    top_result = read_plate(str(top_path))
-    bottom_result = read_plate(str(bottom_path))
+    top_result = read_plate(str(top_path), 2)
+    bottom_result = read_plate(str(bottom_path), 4)
 
     # --------------------------------------------------------
     # 9. Sonuçları temizle

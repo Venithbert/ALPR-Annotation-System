@@ -73,11 +73,20 @@ def detect_plate(image_path):
         aspect_ratio = width / height
         area = width * height
 
+        print(
+        f"Aday {i + 1}: "
+        f"confidence={confidence:.2f}, "
+        f"oran={aspect_ratio:.2f}, "
+        f"alan={area:.0f}"
+        )
+        
         # Çok dar veya aşırı geniş kutuları ele
-        if 2.0 <= aspect_ratio <= 5.0:
+        if 1.3 <= aspect_ratio <= 5.0:
             candidates.append(
                 (i, confidence, aspect_ratio, area)
             )
+
+
 
     # --------------------------------------------------------
     # En uygun adayı seç

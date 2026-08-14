@@ -14,7 +14,7 @@ model = create_model("parseq", pretrained=True).to(device)
 img_transform = SceneTextDataModule.get_transform(model.hparams.img_size)
 
 
-def read_plate(image_path):
+def read_plate(image_path, max_length):
     image = Image.open(image_path).convert("RGB")
 
     
