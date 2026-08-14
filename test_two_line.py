@@ -1,5 +1,5 @@
 from pathlib import Path
-from PIL import Image
+from PIL import Image, ImageEnhance
 
 from plate_detector import detect_plate
 from parseq_reader import read_plate
@@ -17,6 +17,9 @@ OUTPUT_FOLDER.mkdir(parents=True, exist_ok=True)
 # PARSeq'e vermeden önce crop'u kaç kat büyüteceğiz?
 SCALE_FACTOR = 3
 
+# Kontrast artırma miktarı
+CONTRAST_FACTOR = 1.25
+
 
 # ============================================================
 # TEST GÖRSELLERİNİ BUL
@@ -29,7 +32,12 @@ test_images = sorted(
     ]
 )
 
+print("Kullanılan cihaz: cuda")
 print("Toplam test görüntüsü:", len(test_images))
+print()
+
+found_count = 0
+
 
 # ============================================================
 # PLAKA CROP'UNU SIKIŞTIR
@@ -45,11 +53,23 @@ def tighten_plate_crop(image):
 
     # Üstten ve alttan küçük miktarda boşluk kaldır
     top = int(height * 0.04)
-    bottom = int(height * 0.88)
+    bottom = int(height * 0.94)
 
     return image.crop(
         (left, top, right, bottom)
     )
+
+
+# ============================================================
+# KONTRASTI ARTIR
+# ============================================================
+
+def improve_contrast(image):
+
+    enhancer = ImageEnhance.Contrast(image)
+
+    return enhancer.enhance(CONTRAST_FACTOR)
+
 
 # ============================================================
 # ÇİFT SATIRI AYIR
@@ -59,7 +79,7 @@ def split_two_line_plate(image):
 
     width, height = image.size
 
-    # Şimdilik aynı şekilde ortadan bölüyoruz.
+    # Şimdilik ortadan bölüyoruz.
     middle = height // 2
 
     top = image.crop(
@@ -98,55 +118,57 @@ for image_path in test_images:
 
     image_name = image_path.name
 
-    print("\n------------------------------")
-    print("Test edilen görüntü:", image_name)
-
     # --------------------------------------------------------
     # 1. YOLO ile plakayı bul
     # --------------------------------------------------------
 
-    plate = detect_plate(str(image_path))
+    plate, confidence = detect_plate(str(image_path))
 
     if plate is None:
-        print("YOLO plakayı bulamadı.")
+        print(f"{image_path.stem} → PLAKA BULUNAMADI")
         continue
 
-    # YOLO crop
+    found_count += 1
+
+    # --------------------------------------------------------
+    # 2. YOLO crop dosyasını bul
+    # --------------------------------------------------------
+
     crop_path = Path("outputs/crops") / image_name
 
     if not crop_path.exists():
-        print("YOLO crop dosyası bulunamadı:", crop_path)
+        print(f"{image_path.stem} → CROP BULUNAMADI")
         continue
 
     image = Image.open(crop_path).convert("RGB")
 
-    print("YOLO crop boyutu:", image.size)
+    # --------------------------------------------------------
+    # 3. Gereksiz kenarları temizle
+    # --------------------------------------------------------
 
     image = tighten_plate_crop(image)
 
-    print("Daraltılmış crop boyutu:", image.size)
+    # --------------------------------------------------------
+    # 4. Kontrastı hafif artır
+    # --------------------------------------------------------
+
+    image = improve_contrast(image)
 
     # --------------------------------------------------------
-    # 2. Üst ve alt satırı ayır
+    # 5. Üst ve alt satırı ayır
     # --------------------------------------------------------
 
     top, bottom = split_two_line_plate(image)
 
-    print("Normal üst crop boyutu:", top.size)
-    print("Normal alt crop boyutu:", bottom.size)
-
     # --------------------------------------------------------
-    # 3. Crop'ları 3× büyüt
+    # 6. Crop'ları 3× büyüt
     # --------------------------------------------------------
 
     top = enlarge_image(top, SCALE_FACTOR)
     bottom = enlarge_image(bottom, SCALE_FACTOR)
 
-    print("Büyütülmüş üst crop boyutu:", top.size)
-    print("Büyütülmüş alt crop boyutu:", bottom.size)
-
     # --------------------------------------------------------
-    # 4. Büyütülmüş crop'ları kaydet
+    # 7. Büyütülmüş crop'ları kaydet
     # --------------------------------------------------------
 
     stem = image_path.stem
@@ -157,27 +179,15 @@ for image_path in test_images:
     top.save(top_path)
     bottom.save(bottom_path)
 
-    print("Üst crop:", top_path)
-    print("Alt crop:", bottom_path)
-
     # --------------------------------------------------------
-    # 5. Üst satırı PARSeq ile oku
+    # 8. PARSeq ile oku
     # --------------------------------------------------------
-
-    print("Üst satır okunuyor...")
 
     top_result = read_plate(str(top_path))
-
-    # --------------------------------------------------------
-    # 6. Alt satırı PARSeq ile oku
-    # --------------------------------------------------------
-
-    print("Alt satır okunuyor...")
-
     bottom_result = read_plate(str(bottom_path))
 
     # --------------------------------------------------------
-    # 7. Sonuçları temizle
+    # 9. Sonuçları temizle
     # --------------------------------------------------------
 
     top_result = top_result.replace(" ", "")
@@ -186,10 +196,23 @@ for image_path in test_images:
     final_result = top_result + bottom_result
 
     # --------------------------------------------------------
-    # 8. Sonuçları göster
+    # 10. Sonucu göster
     # --------------------------------------------------------
 
-    print()
-    print("Üst satır:", top_result)
-    print("Alt satır:", bottom_result)
-    print("BİRLEŞTİRİLMİŞ:", final_result)
+    print(
+        f"{image_path.stem} → {final_result}"
+        f" | YOLO confidence: {confidence:.2f}"
+    )
+
+
+# ============================================================
+# ÖZET
+# ============================================================
+
+not_found_count = len(test_images) - found_count
+
+print()
+print("--------------------------------")
+print(f"Plaka bulunan: {found_count}/{len(test_images)}")
+print(f"Plaka bulunamayan: {not_found_count}/{len(test_images)}")
+print("--------------------------------")
