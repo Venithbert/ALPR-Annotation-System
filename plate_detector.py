@@ -8,18 +8,18 @@ model = YOLO("license_plate_detector.pt")
 def detect_plate(image_path):
     image = Image.open(image_path).convert("RGB")
 
+    # 1. Yanlış nesneleri engellemek için conf=0.25 ve iç içe kutuları silmek için iou=0.45 ekledik
     results = model(
         image,
-        conf=0.10,
+        conf=0.25,
+        iou=0.45,
         imgsz=1280
     )
     boxes = results[0].boxes
 
+    # Eğer 0.25 ile plaka bulunamazsa 0.15 ile tekrar dene
     if len(boxes) == 0:
-        print("0.10 confidence ile plaka bulunamadı.")
-        print("Düşük confidence ile tekrar deneniyor...")
-
-        results = model(image, conf=0.05)
+        results = model(image, conf=0.15, iou=0.45, imgsz=1280)
         boxes = results[0].boxes
 
     if len(boxes) == 0:
@@ -29,6 +29,7 @@ def detect_plate(image_path):
     # Kutulu görüntüyü oluştur ve kaydet
     # --------------------------------------------------------
 
+    image_name = image_path.split("/")[-1].split("\\")[-1]
     detection_image = image.copy()
     draw = ImageDraw.Draw(detection_image)
 
@@ -48,8 +49,6 @@ def detect_plate(image_path):
             fill="blue"
         )
 
-    image_name = image_path.split("/")[-1].split("\\")[-1]
-
     detection_path = f"outputs/detections/{image_name}"
     detection_image.save(detection_path)
 
@@ -60,7 +59,6 @@ def detect_plate(image_path):
     candidates = []
 
     for i, box in enumerate(boxes):
-
         x1, y1, x2, y2 = box.xyxy[0].tolist()
         confidence = box.conf[0].item()
 
@@ -74,55 +72,44 @@ def detect_plate(image_path):
         area = width * height
 
         print(
-        f"Aday {i + 1}: "
-        f"confidence={confidence:.2f}, "
-        f"oran={aspect_ratio:.2f}, "
-        f"alan={area:.0f}"
+            f"Aday {i + 1}: "
+            f"confidence={confidence:.2f}, "
+            f"oran={aspect_ratio:.2f}, "
+            f"alan={area:.0f}"
         )
         
-        # Çok dar veya aşırı geniş kutuları ele
-        if 1.3 <= aspect_ratio <= 5.0:
+        # Kare (çift satır) ve uzun (tek satır) plakaları kapsayacak aralık
+        if 1.1 <= aspect_ratio <= 5.5:
             candidates.append(
                 (i, confidence, aspect_ratio, area)
             )
-
-
 
     # --------------------------------------------------------
     # En uygun adayı seç
     # --------------------------------------------------------
 
     if candidates:
-
-        max_area = max(
-            candidate[3]
-            for candidate in candidates
-        )
+        max_area = max(c[3] for c in candidates)
 
         scored_candidates = []
 
         for i, confidence, aspect_ratio, area in candidates:
-
             area_ratio = area / max_area
 
-            score = (
-                confidence * 0.6
-                + (1 - area_ratio) * 0.4
-            )
+            # Confidence yüksek olan ve alanı büyük/net olan kutuyu seç
+            score = (confidence * 0.7) + (area_ratio * 0.3)
 
             scored_candidates.append(
                 (i, confidence, aspect_ratio, area, score)
             )
 
-        best_index, confidence, aspect_ratio, area, score = max(
-            scored_candidates,
-            key=lambda x: x[4]
-        )
+        best_candidate = max(scored_candidates, key=lambda x: x[4])
+        best_index = best_candidate[0]
+        confidence = best_candidate[1]
 
     else:
-
         best_index = boxes.conf.argmax().item()
-        confidence = boxes.conf[best_index].item()
+        confidence = boxes.conf[best_index].item()  
 
     # --------------------------------------------------------
     # Plaka crop
