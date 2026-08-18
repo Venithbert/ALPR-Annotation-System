@@ -1,0 +1,3 @@
+[submodule "PaddleOCR_ata"]
+	path = PaddleOCR_ata
+	url = git@github.com:atagkuluslu/License-Plate-Detection.git
