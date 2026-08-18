@@ -3,7 +3,6 @@ from pathlib import Path
 from PIL import Image, ImageEnhance, ImageDraw, ImageFont
 import numpy as np
 import cv2
-
 from plate_detector import detect_plate
 from parseq_reader import read_plate
 
@@ -21,7 +20,6 @@ CONTRAST_FACTOR = 1.25
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png"}
 
 MAX_TWO_LINE_RATIO = 2.65
-
 
 # ============================================================
 # CROP VE KONTRAST TEMİZLEME
