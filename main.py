@@ -3,6 +3,7 @@ from pathlib import Path
 from PIL import Image, ImageEnhance, ImageDraw, ImageFont
 import numpy as np
 import cv2
+import csv 
 from plate_detector import detect_plate
 from parseq_reader import read_plate
 
@@ -20,6 +21,17 @@ CONTRAST_FACTOR = 1.25
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png"}
 
 MAX_TWO_LINE_RATIO = 2.65
+
+# ============================================================
+# CSV RAPOR DOSYASINI HAZIRLA
+# ============================================================
+CSV_REPORT_PATH = Path("degerlendirme_raporu.csv")
+
+# Program her çalıştığında temiz bir rapor dosyası oluşturur başlıkları yazar
+with open(CSV_REPORT_PATH, mode='w', newline='', encoding='utf-8') as f:
+    writer = csv.writer(f)
+    writer.writerow(['Dosya Adi', 'Okunan Plaka', 'PARSeq Skor'])
+
 
 # ============================================================
 # CROP VE KONTRAST TEMİZLEME
@@ -92,7 +104,7 @@ def enlarge_image(image, scale):
 # DETECTION GÖRSELİNE SONUCU YAZ
 # ============================================================
 
-def write_result_on_detection(image_path, result):
+def write_result_on_detection(image_path, result, detection_conf=0.90, ocr_conf=0.90):
     detection_path = Path("outputs/detections") / image_path.name
 
     if not detection_path.exists():
@@ -105,6 +117,8 @@ def write_result_on_detection(image_path, result):
         font = ImageFont.truetype("arial.ttf", 32)
     except:
         font = ImageFont.load_default()
+
+    label_text = f"{result} | D:{detection_conf:.2f} | S:{ocr_conf:.2f}"
 
     pixels = detection_image.load()
     image_width, image_height = detection_image.size
@@ -122,7 +136,7 @@ def write_result_on_detection(image_path, result):
                 max_y = max(max_y, y)
 
     if max_x > min_x and max_y > min_y:
-        bbox = draw.textbbox((0, 0), result, font=font)
+        bbox = draw.textbbox((0, 0), label_text, font=font)
         text_width = bbox[2] - bbox[0]
         text_height = bbox[3] - bbox[1]
 
@@ -133,7 +147,7 @@ def write_result_on_detection(image_path, result):
             (text_x - 4, text_y - 4, text_x + text_width + 4, text_y + text_height + 4),
             fill="blue"
         )
-        draw.text((text_x, text_y), result, fill="white", font=font)
+        draw.text((text_x, text_y), label_text, fill="white", font=font)
 
     detection_image.save(detection_path)
 
@@ -146,9 +160,6 @@ for image_path in IMAGE_FOLDER.iterdir():
 
     if image_path.suffix.lower() not in IMAGE_EXTENSIONS:
         continue
-
-    print("\n------------------------------")
-    print("İşlenen görüntü:", image_path.name)
 
     plate_result = detect_plate(str(image_path))
 
@@ -165,7 +176,6 @@ for image_path in IMAGE_FOLDER.iterdir():
         continue
 
     aspect_ratio = width / height
-    print(f"Plaka oranı: {aspect_ratio:.2f}")
 
     is_two_line = False
     top, bottom = None, None
@@ -176,8 +186,6 @@ for image_path in IMAGE_FOLDER.iterdir():
             is_two_line = True
 
     if is_two_line:
-        print("Plaka tipi: ÇİFT SATIR")
-
         top_img = enlarge_image(top, SCALE_FACTOR)
         bottom_img = enlarge_image(bottom, SCALE_FACTOR)
 
@@ -196,25 +204,25 @@ for image_path in IMAGE_FOLDER.iterdir():
         # AKILLI FİLTRELEME VE TEK SATIRA DÜŞME MANTIĞI:
         # 1. Eğer üst satır 3 harften uzunsa veya alt satır gürültüyse (<=1 karakter) -> Çift satır kararı hatalıdır!
         if len(cleaned_top) > 3 or len(cleaned_bottom) <= 1:
-            print(f"Çift satır gürültülü/geçersiz tespit edildi (Üst: '{cleaned_top}', Alt: '{cleaned_bottom}'). TEK SATIR olarak tekrar deneniyor...")
             is_two_line = False
         else:
             final_result = cleaned_top + cleaned_bottom
             final_ocr_conf = (top_conf + bottom_conf) / 2
-            print("Üst satır:", cleaned_top)
-            print("Alt satır:", cleaned_bottom)
 
     if not is_two_line:
-        print("Plaka tipi: TEK SATIR")
-
         single_image = enlarge_image(image, SCALE_FACTOR)
         single_path = OCR_INPUTS_FOLDER / f"{image_path.stem}_single.jpg"
         single_image.save(single_path)
 
         single_result, final_ocr_conf = read_plate(str(single_path))
         final_result = clean_plate_text(single_result)
-        print("Tek satır sonucu:", final_result)
 
-    print(f"PLAKA: {final_result} | PARSeq Confidence: {final_ocr_conf:.2f}")
+    print(f"İşlendi: {image_path.name} -> Plaka: {final_result} (Skor: {final_ocr_conf:.2f})")
 
-    write_result_on_detection(image_path, final_result)
+    with open(CSV_REPORT_PATH, mode='a', newline='', encoding='utf-8') as f:
+        writer = csv.writer(f)
+        writer.writerow([image_path.name, final_result, f"{final_ocr_conf:.2f}"])
+
+    
+
+    write_result_on_detection(image_path, final_result, detection_conf=0.90, ocr_conf=final_ocr_conf)
