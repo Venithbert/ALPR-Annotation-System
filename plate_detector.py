@@ -1,26 +1,24 @@
-from ultralytics import YOLO
+import pathlib
+import pathlib
+
+pathlib.PosixPath = pathlib.WindowsPath
+
+import torch 
 from PIL import Image, ImageDraw
 
 
-model = YOLO("license_plate_detector.pt")
+model_path = "model_16.pt"  # Modeli yükle
+model = torch.hub.load("ultralytics/yolov5", "custom", path=model_path, force_reload=False)
 
 
 def detect_plate(image_path):
     image = Image.open(image_path).convert("RGB")
 
     # 1. Yanlış nesneleri engellemek için conf=0.25 ve iç içe kutuları silmek için iou=0.45 ekledik
-    results = model(
-        image,
-        conf=0.25,
-        iou=0.45,
-        imgsz=1280
-    )
-    boxes = results[0].boxes
+    results = model(image)
 
-    # Eğer 0.25 ile plaka bulunamazsa 0.15 ile tekrar dene
-    if len(boxes) == 0:
-        results = model(image, conf=0.15, iou=0.45, imgsz=1280)
-        boxes = results[0].boxes
+    boxes = results.xyxy[0]
+
 
     if len(boxes) == 0:
         return None, None
@@ -34,8 +32,8 @@ def detect_plate(image_path):
     draw = ImageDraw.Draw(detection_image)
 
     for box in boxes:
-        x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
-        confidence = box.conf[0].item()
+        x1, y1, x2, y2 = map(int, box[:4].tolist())     # Koordinatları al
+        confidence = box[4].item()                      # 5. sütun confidence (güven)
 
         draw.rectangle(
             (x1, y1, x2, y2),
@@ -59,8 +57,8 @@ def detect_plate(image_path):
     candidates = []
 
     for i, box in enumerate(boxes):
-        x1, y1, x2, y2 = box.xyxy[0].tolist()
-        confidence = box.conf[0].item()
+        x1, y1, x2, y2 = box[:4].tolist()     # Koordinatları al
+        confidence = box[4].item()            # Confidence'ı al
 
         width = x2 - x1
         height = y2 - y1
@@ -108,14 +106,14 @@ def detect_plate(image_path):
         confidence = best_candidate[1]
 
     else:
-        best_index = boxes.conf.argmax().item()
-        confidence = boxes.conf[best_index].item()  
+        best_index = boxes[:, 4].argmax().item() # Güven skoru 4. sütunda
+        confidence = boxes[best_index][4].item()
 
     # --------------------------------------------------------
     # Plaka crop
     # --------------------------------------------------------
 
-    x1, y1, x2, y2 = boxes.xyxy[best_index].tolist()
+    x1, y1, x2, y2 = map(int, boxes[best_index][:4].tolist())
 
     x1, y1, x2, y2 = map(
         int,
