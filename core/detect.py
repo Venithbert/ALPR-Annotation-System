@@ -31,5 +31,5 @@ def detect_plate(model, folder, crops_folder):
         box = (best["xmin"], best["ymin"], best["xmax"], best["ymax"])
         Image.open(image).crop(box).save(crops_folder / image.name)
         records[image.name] = best["confidence"]
-    
+            
     return records
