@@ -68,7 +68,7 @@ def crop_testini_baslat():
                 final_conf = 0.0
                 status = "error"
 
-            # CSV'ye yaz (Arkadaşının istediği format)
+            
             conf_str = f"{final_conf:.2f}" if status == "ok" else "0.0"
             writer.writerow([dosya_adi, tahmin_edilen, conf_str, status])
 
