@@ -15,34 +15,21 @@ ERROR_FOLDER = OUTPUT_FOLDER / "error"
 CSV_FILE = "crop_sonuclar.csv"
 
 def clean_plate_text(text):
+    # Metinden sadece harf ve rakamları bırakır
     return re.sub(r'[^A-Z0-9]', '', text.upper())
-
-# --- DOSYA İSMİNDEN GERÇEK PLAKAYI ÇIKARMA ---
-def gercek_plakayi_cikart(dosya_adi):
-   
-    parcalar = dosya_adi.split('_')
-    for parca in parcalar:
-        # Eğer parçanın içinde plaka formatı varsa (örneğin rakam-tire içeriyorsa)
-        if '-' in parca and len(parca) >= 3:
-            return clean_plate_text(parca)
-    
-    # Eğer yukarıdaki format uymuyorsa standart 3. parçaya bakalım (eski sistemimiz gibi)
-    if len(parcalar) >= 3:
-        return clean_plate_text(parcalar[2])
-        
-    return "BILINMIYOR"
 
 def crop_testini_baslat():
     if not INPUT_FOLDER.exists():
         print(f"Hata: '{INPUT_FOLDER}' klasörü bulunamadı!")
         return
 
+    # Çıktı klasörlerini temizle ve oluştur
     if OUTPUT_FOLDER.exists():
         shutil.rmtree(OUTPUT_FOLDER)
     OK_FOLDER.mkdir(parents=True, exist_ok=True)
     ERROR_FOLDER.mkdir(parents=True, exist_ok=True)
 
-    print(f"'{INPUT_FOLDER}' klasöründeki crop resimler PARSeq ile okunup dosya adlarıyla karşılaştırılıyor...\n")
+    print(f"'{INPUT_FOLDER}' klasöründeki crop resimler PARSeq ile okunuyor...\n")
 
     ok_sayisi = 0
     error_sayisi = 0
@@ -56,7 +43,6 @@ def crop_testini_baslat():
                 continue
 
             dosya_adi = img_path.name
-            gercek_plaka = gercek_plakayi_cikart(dosya_adi)
             tahmin_edilen = ""
             final_conf = 0.0
             status = "error"
@@ -66,33 +52,39 @@ def crop_testini_baslat():
                 ham_sonuc, final_conf = read_plate(str(img_path))
                 tahmin_edilen = clean_plate_text(ham_sonuc)
                 
-                # --- KARŞILAŞTIRMA MANTIĞI ---
-                # Modelin okuduğu ile dosya adındaki gerçek plaka BİREBİR TUTUYOR MU?
-                if tahmin_edilen != "" and tahmin_edilen == gercek_plaka:
+                # --- YENİ SADE MANTIK ---
+                # Eğer model bir şeyler okuyabildiyse STATUS = OK
+                if len(tahmin_edilen) > 0 and final_conf > 0.0:
                     status = "ok"
                 else:
+                    # Okuyamadıysa plaka boş kalsın, skor 0.0 ve status = error olsun
+                    tahmin_edilen = ""
+                    final_conf = 0.0
                     status = "error"
                     
             except Exception as e:
                 print(f"Okuma hatası ({dosya_adi}): {e}")
+                tahmin_edilen = ""
+                final_conf = 0.0
                 status = "error"
 
-            # CSV'ye yaz
-            writer.writerow([dosya_adi, tahmin_edilen, f"{final_conf:.2f}", status])
+            # CSV'ye yaz (Arkadaşının istediği format)
+            conf_str = f"{final_conf:.2f}" if status == "ok" else "0.0"
+            writer.writerow([dosya_adi, tahmin_edilen, conf_str, status])
 
             # Klasörlere ayır
             if status == "ok":
                 shutil.copy(img_path, OK_FOLDER / dosya_adi)
                 ok_sayisi += 1
-                print(f"[OK] {dosya_adi} -> Gerçek: {gercek_plaka} | Okunan: {tahmin_edilen}")
+                print(f"[OK] {dosya_adi} -> Okunan: '{tahmin_edilen}' (Skor: {conf_str})")
             else:
                 shutil.copy(img_path, ERROR_FOLDER / dosya_adi)
                 error_sayisi += 1
-                print(f"[ERROR] {dosya_adi} -> Gerçek: {gercek_plaka} | Okunan: {tahmin_edilen}")
+                print(f"[ERROR - BOŞ] {dosya_adi} -> Plaka okunamadı!")
 
-    print("\n--- CROP KARŞILAŞTIRMA TESTİ BİTTİ ---")
-    print(f"OK (Doğru Eşleşen): {ok_sayisi}")
-    print(f"ERROR (Yanlış/Uyuşmayan): {error_sayisi}")
+    print("\n--- CROP TESTİ BİTTİ ---")
+    print(f"OK (Okunabilen Resim Sayısı): {ok_sayisi}")
+    print(f"ERROR (Hiç Okunamayan / Boş Kalan): {error_sayisi}")
     print(f"CSV Raporu '{CSV_FILE}' adıyla kaydedildi!")
 
 if __name__ == "__main__":
