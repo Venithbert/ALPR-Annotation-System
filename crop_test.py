@@ -19,9 +19,7 @@ def clean_plate_text(text):
 
 # --- DOSYA İSMİNDEN GERÇEK PLAKAYI ÇIKARMA ---
 def gercek_plakayi_cikart(dosya_adi):
-    # Arkadaşının dosya ismi formatına göre (Örn: T7_032940_20-11408___Unknown.jpg)
-    # Genelde aradaki tireli veya alt tireli kısımlar gerçek plakayı verir.
-    # Senin ekran görüntündeki örneklere göre ayarlıyoruz:
+   
     parcalar = dosya_adi.split('_')
     for parca in parcalar:
         # Eğer parçanın içinde plaka formatı varsa (örneğin rakam-tire içeriyorsa)
