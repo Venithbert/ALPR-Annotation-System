@@ -1,0 +1,9 @@
+path: yolo_dataset # Klasörümüzün ana dizini
+train: images/train # Eğitim resimlerinin yolu
+val: images/val # Test resimlerinin yolu
+
+# Sınıf Sayısı (Number of Classes)
+nc: 1
+
+# Sınıf İsimleri
+names: ["cyprus_plate"]
