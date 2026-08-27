@@ -14,8 +14,7 @@ def mergeCSV(result, ai1, ai2, ai3):
 
     df = pd.merge(df1, df2, on="filename")
     df = pd.merge(df, df3, on="filename")
-    df = pd.merge(df, results, on="filename")
-
+    df = pd.merge(df, results, on="filename", how="left")
 
     analyze(df)
 

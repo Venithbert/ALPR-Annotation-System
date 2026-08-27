@@ -32,7 +32,7 @@ review by 60 to 80 percent. Create ground truth faster without losing quality.
 5. **Normalise** — one shared function applied to all four readings (ALPR + 3 readers)
 6. **Vote** — assign a bucket
 7. **Review** — operator types the plate for `manual` rows only
-8. **Export** — copy images into bucket folders, plus a summary
+8. **Export** — copy images into bucket folders
 
 ---
 
@@ -66,8 +66,9 @@ alpr/
     dataset.py     folder → image records, filename parsing
     detect.py      YOLO wrapper
     readers.py     launches reader subprocesses
-    vote.py        normalisation + bucket assignment
     store.py       results.csv read/write
+    analyze.py
+    reorder.py
   ui/              Qt widgets only PySide6
     main_window.py
   config.py
