@@ -7,7 +7,7 @@ import torch
 from PIL import Image, ImageDraw
 
 
-model_path = "model_16.pt"  # Modeli yükle
+model_path = "best.pt"  # Modeli yükle
 model = torch.hub.load("ultralytics/yolov5", "custom", path=model_path, force_reload=False)
 
 
