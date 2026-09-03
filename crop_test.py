@@ -48,16 +48,15 @@ def crop_testini_baslat():
             status = "error"
 
             try:
-                # Plakayı oku
+                
                 ham_sonuc, final_conf = read_plate(str(img_path))
                 tahmin_edilen = clean_plate_text(ham_sonuc)
                 
-                # --- YENİ SADE MANTIK ---
-                # Eğer model bir şeyler okuyabildiyse STATUS = OK
+                
                 if len(tahmin_edilen) > 0 and final_conf > 0.0:
                     status = "ok"
                 else:
-                    # Okuyamadıysa plaka boş kalsın, skor 0.0 ve status = error olsun
+                    
                     tahmin_edilen = ""
                     final_conf = 0.0
                     status = "error"
@@ -72,7 +71,7 @@ def crop_testini_baslat():
             conf_str = f"{final_conf:.2f}" if status == "ok" else "0.0"
             writer.writerow([dosya_adi, tahmin_edilen, conf_str, status])
 
-            # Klasörlere ayır
+            
             if status == "ok":
                 shutil.copy(img_path, OK_FOLDER / dosya_adi)
                 ok_sayisi += 1
