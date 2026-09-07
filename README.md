@@ -17,6 +17,8 @@ python app.py
 
 ## How it works
 
-The company had a manual workflow for building ground truth data. We automated 80% of it.
+The company had a manual workflow for building ground truth data. We automated 80% of it. 
+
+All three agree → automated. Any disagreement → a person reads it.
 
 <img width="1346" height="1072" alt="Screenshot 2026-09-07 091631" src="https://github.com/user-attachments/assets/3996686f-d3e9-4f2b-92bb-44256d4099fc" />
